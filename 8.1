@@ -1,0 +1,101 @@
+import React, { useState } from "react";
+import ReactDOM from "react-dom/client";
+
+const App = () => {
+  // State for form fields
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  // Handle form submission
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!email || !password) {
+      setMessage("Please fill in all fields!");
+      return;
+    }
+
+    // Dummy login check
+    if (email === "admin@example.com" && password === "123456") {
+      setMessage("Login successful!");
+    } else {
+      setMessage("Invalid email or password!");
+    }
+
+    // Clear fields
+    setEmail("");
+    setPassword("");
+  };
+
+  // Inline styles
+  const styles = {
+    container: {
+      width: "350px",
+      margin: "100px auto",
+      padding: "30px",
+      borderRadius: "8px",
+      backgroundColor: "#fff",
+      boxShadow: "0 0 15px rgba(0,0,0,0.2)",
+      textAlign: "center",
+      fontFamily: "Arial, sans-serif",
+    },
+    input: {
+      padding: "10px",
+      fontSize: "16px",
+      borderRadius: "5px",
+      border: "1px solid #ccc",
+      marginBottom: "15px",
+      width: "100%",
+      boxSizing: "border-box",
+    },
+    button: {
+      padding: "10px",
+      fontSize: "16px",
+      borderRadius: "5px",
+      border: "none",
+      backgroundColor: "#007bff",
+      color: "#fff",
+      cursor: "pointer",
+      width: "100%",
+    },
+    message: {
+      marginTop: "15px",
+      fontWeight: "bold",
+      color: message.includes("success") ? "green" : "red",
+    },
+    h2: {
+      marginBottom: "20px",
+      color: "#333",
+    },
+  };
+
+  return (
+    <div style={styles.container}>
+      <h2 style={styles.h2}>Login</h2>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          style={styles.input}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          style={styles.input}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button type="submit" style={styles.button}>
+          Login
+        </button>
+      </form>
+      {message && <p style={styles.message}>{message}</p>}
+    </div>
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
