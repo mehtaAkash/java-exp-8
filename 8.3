@@ -1,0 +1,205 @@
+import React, { useState } from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
+// ================== Fake Backend ==================
+// Returns a token and role based on email/password
+const fakeLogin = (email, password) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (email === "admin@example.com" && password === "123456") {
+        resolve({ token: "jwt-admin", role: "admin" });
+      } else if (email === "moderator@example.com" && password === "123456") {
+        resolve({ token: "jwt-moderator", role: "moderator" });
+      } else if (email === "user@example.com" && password === "123456") {
+        resolve({ token: "jwt-user", role: "user" });
+      } else {
+        reject("Invalid credentials");
+      }
+    }, 500);
+  });
+};
+
+// ================== Login Page ==================
+const Login = ({ setAuth }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setMessage("Please fill all fields!");
+      return;
+    }
+
+    try {
+      const res = await fakeLogin(email, password);
+      localStorage.setItem("token", res.token);
+      localStorage.setItem("role", res.role);
+      setAuth({ token: res.token, role: res.role });
+      setMessage("");
+    } catch (err) {
+      setMessage(err);
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <h2>Login</h2>
+      <form onSubmit={handleSubmit} style={styles.form}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+        />
+        <button type="submit" style={styles.button}>Login</button>
+      </form>
+      {message && <p style={{ color: "red" }}>{message}</p>}
+      <p>Use emails: admin@example.com, moderator@example.com, user@example.com<br/>Password: 123456</p>
+    </div>
+  );
+};
+
+// ================== Dashboard Pages ==================
+const AdminDashboard = ({ logout }) => (
+  <div style={styles.container}>
+    <h2>Admin Dashboard</h2>
+    <p>Welcome, Admin!</p>
+    <button onClick={logout} style={styles.button}>Logout</button>
+  </div>
+);
+
+const ModeratorDashboard = ({ logout }) => (
+  <div style={styles.container}>
+    <h2>Moderator Dashboard</h2>
+    <p>Welcome, Moderator!</p>
+    <button onClick={logout} style={styles.button}>Logout</button>
+  </div>
+);
+
+const UserDashboard = ({ logout }) => (
+  <div style={styles.container}>
+    <h2>User Dashboard</h2>
+    <p>Welcome, User!</p>
+    <button onClick={logout} style={styles.button}>Logout</button>
+  </div>
+);
+
+// ================== Protected Route ==================
+const ProtectedRoute = ({ auth, allowedRoles, children }) => {
+  if (!auth.token) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(auth.role)) return <Navigate to="/unauthorized" replace />;
+  return children;
+};
+
+// ================== Unauthorized Page ==================
+const Unauthorized = () => (
+  <div style={styles.container}>
+    <h2>Unauthorized</h2>
+    <p>You do not have permission to view this page.</p>
+    <a href="/">Go to Login</a>
+  </div>
+);
+
+// ================== Main App ==================
+const App = () => {
+  const [auth, setAuth] = useState({
+    token: localStorage.getItem("token") || null,
+    role: localStorage.getItem("role") || null,
+  });
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    setAuth({ token: null, role: null });
+  };
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login setAuth={setAuth} />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute auth={auth} allowedRoles={["admin"]}>
+              <AdminDashboard logout={logout} />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/moderator"
+          element={
+            <ProtectedRoute auth={auth} allowedRoles={["moderator"]}>
+              <ModeratorDashboard logout={logout} />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/user"
+          element={
+            <ProtectedRoute auth={auth} allowedRoles={["user"]}>
+              <UserDashboard logout={logout} />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="*"
+          element={
+            auth.token
+              ? <Navigate to={`/${auth.role}`} replace />
+              : <Navigate to="/login" replace />
+          }
+        />
+      </Routes>
+    </Router>
+  );
+};
+
+// ================== Styles ==================
+const styles = {
+  container: {
+    width: "350px",
+    margin: "100px auto",
+    padding: "30px",
+    borderRadius: "8px",
+    backgroundColor: "#fff",
+    boxShadow: "0 0 15px rgba(0,0,0,0.2)",
+    textAlign: "center",
+    fontFamily: "Arial, sans-serif",
+  },
+  form: { display: "flex", flexDirection: "column", gap: "15px" },
+  input: {
+    padding: "10px",
+    fontSize: "16px",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
+  },
+  button: {
+    padding: "10px",
+    fontSize: "16px",
+    borderRadius: "5px",
+    border: "none",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    cursor: "pointer",
+  },
+};
+
+// ================== Render App ==================
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
