@@ -1,0 +1,148 @@
+import React, { useState } from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
+// ================== Fake Backend ==================
+// Simulate JWT login. Replace with real API in production
+const fakeLogin = (email, password) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (email === "admin@example.com" && password === "123456") {
+        resolve({ token: "fake-jwt-token-123456" });
+      } else {
+        reject("Invalid credentials");
+      }
+    }, 500);
+  });
+};
+
+// ================== Login Page ==================
+const Login = ({ setToken }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setMessage("Please fill in all fields!");
+      return;
+    }
+
+    try {
+      const res = await fakeLogin(email, password);
+      localStorage.setItem("token", res.token);
+      setToken(res.token);
+      setMessage("");
+    } catch (err) {
+      setMessage(err);
+    }
+
+    setEmail("");
+    setPassword("");
+  };
+
+  return (
+    <div style={styles.container}>
+      <h2>Login</h2>
+      <form onSubmit={handleSubmit} style={styles.form}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+        />
+        <button type="submit" style={styles.button}>Login</button>
+      </form>
+      {message && <p style={{ color: "red" }}>{message}</p>}
+    </div>
+  );
+};
+
+// ================== Dashboard (Protected) ==================
+const Dashboard = ({ setToken }) => {
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setToken(null);
+  };
+
+  return (
+    <div style={styles.container}>
+      <h2>Dashboard</h2>
+      <p>Welcome! You are logged in.</p>
+      <button onClick={handleLogout} style={styles.button}>Logout</button>
+    </div>
+  );
+};
+
+// ================== Protected Route ==================
+const ProtectedRoute = ({ token, children }) => {
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+// ================== Main App ==================
+const App = () => {
+  const [token, setToken] = useState(localStorage.getItem("token") || null);
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login setToken={setToken} />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute token={token}>
+              <Dashboard setToken={setToken} />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to={token ? "/dashboard" : "/login"} />} />
+      </Routes>
+    </Router>
+  );
+};
+
+// ================== Inline Styles ==================
+const styles = {
+  container: {
+    width: "350px",
+    margin: "100px auto",
+    padding: "30px",
+    borderRadius: "8px",
+    backgroundColor: "#fff",
+    boxShadow: "0 0 15px rgba(0,0,0,0.2)",
+    textAlign: "center",
+    fontFamily: "Arial, sans-serif",
+  },
+  form: { display: "flex", flexDirection: "column", gap: "15px" },
+  input: {
+    padding: "10px",
+    fontSize: "16px",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
+  },
+  button: {
+    padding: "10px",
+    fontSize: "16px",
+    borderRadius: "5px",
+    border: "none",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    cursor: "pointer",
+  },
+};
+
+// ================== Render App ==================
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
